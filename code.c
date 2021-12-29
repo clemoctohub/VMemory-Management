@@ -1,36 +1,8 @@
-# Virtual Memory
-
-#### Clément FAGES - Paul WALIGORA - Gr01 ING4 SI
-
-*12/12/2021*
-
-In this lab we implemented the virtual memory. We will explain you succinctly what we have done and what we wanted to do but didn't have time to implement. Then, we will share you the code with remarks.
-
-### I. What we have done
-
-The page table is very useful because it is an abstraction of the physical memory. It enables to create an illusion of the memory and give the impression of having more memory than the RAM has. It is also a faster way to manage memory.
-
-##### Contiguous allocation
-
-In the first course, we have implemented the virtual memory with linked lists as holes in C. The goal was to allocate memory where there was some place and manage the address' index and size of hole. Then we had to free memory by creating new holes at the corresponding address. We also had to join the holes if two or more holes joined each other. We have to check each time the previous and next hole addresses of the new hole.
-
-##### Paging
-
-Then, we had to implement the page table to link virtual memory and physical memory. We created three arrays : the page table (to link virtual addresses and physical addresses), the frame table (to tell if the frame in the RAM is free or not) and the physical memory (RAM). First we had to link the page and frame tables in the allocation part. We allocated the element in the virtual memory and we got the virtual address. We checked thanks to the frame table where there was some free space. The virtual address is the index of the page table and in this box array we put the address of the frame which is free. We had to allocate many pages at once by using a loop if the size to allocate is bigger than a page size. Then if we wanted to free some space we had to manage the virtual memory first. The virtual memory returned a hole (which could be join so not the same address as the one send in the parameters) with an address and a size. We checked where was the first page and the last and we released the index of page table between these two addresses. We did the same for the frame table to tell the OS that the frame of the RAM is free at this index. Finally, we had to check if the first and the last page were completely free to free them also.
-
-##### Other implementations
-
-We wanted to add a level-1 paging but we didn't had the time. It could be great to have a smarter way to manage memory. We also wanted to implement TLB after the level-1 paging to have a faster way to access data because multi level paging decrease performances. Finally, we had the idea to use threads to allocate memory but it could be very hard and we could face many difficulties.
-
-### II. Code and remarks
-
-```c
 //import libraries
 #include <stdio.h>
 #include <stdlib.h>
-
-#ifndef __MMU__H__ 
-#define __MMU__H__ 
+#ifndef __MMU__H__
+#define __MMU__H__
 //define size of VM and size of a page
 #define SIZE 65536
 #define PAGE_TABLE 128 //size of a page
@@ -39,43 +11,37 @@ typedef short byte_t; //byte_t as short
 typedef int address_t; //address_t as int
 //define structure hole with one address, one size and the address of the next and previous hole
 typedef struct hole {
-  address_t adr;
-  int sz;
-  struct hole *next;
-  struct hole *prev;
+    address_t adr;
+    int sz;
+    struct hole *next;
+    struct hole *prev;
 } hole_t;
 // define structure of the memory :
 // 1. the physical memory (RAM)
-// 2. the frame which tells if each a specific frame is free in the RAM (useful if we use threads)
+// 2. the frame which tells if each a specific frame is free in the RAM
 // 3. the page table, its size is equal to the number of page in the Virtual Memory
 // 4. the root which is related to the first hole
 typedef struct {
-  byte_t physmem[SIZE/2];
-  byte_t frame[SIZE/PAGE_TABLE];
-  byte_t tablePage[SIZE/PAGE_TABLE];
-  hole_t *root; // holes list
+    byte_t physmem[SIZE/2];
+    byte_t frame[SIZE/PAGE_TABLE];
+    byte_t tablePage[SIZE/PAGE_TABLE];
+    hole_t *root; // holes list
 } mem_t;
- 
-// dynamically allocates a mem_t structure and initializes its content 
-mem_t *initMem();  
- 
+// dynamically allocates a mem_t structure and initializes its content
+mem_t *initMem();
 // allocates space in bytes (byte_t) using First-Fit in the virtual memory
 address_t myAllocCont(mem_t *mp, int sz);
 // puts correct addresses in the page table and the frame table
 address_t myAlloc(mem_t *mp, int sz);
- 
-// release memory that has already been allocated previously 
+// release memory that has already been allocated previously
 hole_t* myContFree(mem_t *mp, address_t p, int sz);
 // check if page is free and do the necessary in the page table and the frame table
 void myFree(mem_t *mp, address_t p, int sz);
- 
-// assign a value to a byte 
-void myWrite(mem_t *mp, address_t p, byte_t val);  
- 
-// read memory from a byte 
-byte_t myRead(mem_t *mp, address_t p);  
- 
-#endif 
+// assign a value to a byte
+void myWrite(mem_t *mp, address_t p, byte_t val);
+// read memory from a byte
+byte_t myRead(mem_t *mp, address_t p);
+#endif
 //display results of the simulation
 void printEvrth(mem_t *mp){
     //get the first hole
@@ -92,38 +58,40 @@ void printEvrth(mem_t *mp){
         //go to next hole
         h1 = h1->next;
     }
-    /*
-    printf("///////PAGE TABLE///////\n");
-    for(i=0;i<SIZE/PAGE_TABLE;i++){
-        printf("%d -> %d\t",i*PAGE_TABLE,mp->tablePage[i]);
-        if(mp->frame[i]==0)
-            printf("frame is empty\n");
-        else printf("frame is used\n");
-    }*/
+/*
+printf("///////PAGE TABLE///////\n");
+for(i=0;i<SIZE/PAGE_TABLE;i++){
+printf("%d -> %d\t",i*PAGE_TABLE,mp->tablePage[i]);
+if(mp->frame[i]==0)
+printf("frame is empty\n");
+else printf("frame is used\n");
+}*/
 }
- 
 int main() {
-    //initialize the memory for the exercise and return the mem variable
+//initialize the memory for the exercise and return the mem variable
     mem_t *mem = initMem();
-    //allocate three different elements in the memory with different sizes and return the address
-    address_t adr1 = myAlloc(mem, 5); //allocate a size of 5 and return the address where it was allocated
-    address_t adr2 = myAlloc(mem, 10); 
-    address_t adr3 = myAlloc(mem, 100); 
+    //allocate three different elements in the memory with different sizes and
+    return the address
+    address_t adr1 = myAlloc(mem, 5); //allocate a size of 5 and return the
+    address where it was allocated
+    address_t adr2 = myAlloc(mem, 10);
+    address_t adr3 = myAlloc(mem, 100);
     //free a specific size at an address specified
-    myFree(mem, adr2, 10);//here we want to free in the memory an element with a size of 5 and at the address adr2 returned in the second allocation
+    myFree(mem, adr2, 10);//here we want to free in the memory an element with a
+    size of 5 and at the address adr2 returned in the second allocation
     myFree(mem, adr1, 5);
     //write in the physical memory
-    myWrite(mem, adr3, 543);  // write on the 1st byte
-    myWrite(mem, adr3+9, 34); // write on the 10th byte 
+    myWrite(mem, adr3, 543); // write on the 1st byte
+    myWrite(mem, adr3+9, 34); // write on the 10th byte
     //read in the physical memory
-    byte_t  val1 = myRead(mem, adr3); // get the byte at address adr3 by returning it
+    byte_t val1 = myRead(mem, adr3); // get the byte at address adr3 by
+    returning it
     byte_t val2 = myRead(mem, adr3+9);// get the byte at address adr3+9
     //display the result of the simulation
     printEvrth(mem);
     return 0;
 }
-
-// assign a value to a byte 
+// assign a value to a byte
 void myWrite(mem_t *mp, address_t p, byte_t val){
     int beg = p/PAGE_TABLE;//get the index of the page table of the address
     //assign value
@@ -139,32 +107,32 @@ byte_t myRead(mem_t *mp, address_t p){
 }
 //create holes and free table page(s) if necessary
 void myFree(mem_t *mp, address_t p, int sz){
-    //get the hole released we the specific address and size
+//get the hole released we the specific address and size
     hole_t *h1 = myContFree(mp, p, sz);
     //if the hole exists we go on or we abort the operation
     if(!h1){
         return;
     }
-    //we define the first and last page indexes released thanks to the hole returned
-    //it defines a range of pages (from the beg to end) that must be released in the table page to tell that they are now available
+//we define the first and last page indexes released thanks to the hole returned
+//it defines a range of pages (from the beg to end) that must be released in the table page to tell that they are now available
     int beg = h1->adr/PAGE_TABLE;
     int end = (h1->adr+sz+(p-h1->adr))/PAGE_TABLE;
-    //if there is many pages between the first and last page (at least one) we enter in the loop
-    // we start at the page with index "beg"
+//if there is many pages between the first and last page (at least one) we enter in the loop
+// we start at the page with index "beg"
     for(int i=beg+1;i<end;i++){
-        //if page table is not empty condition is verified
+    //if page table is not empty condition is verified
         if(mp->tablePage[i]!=-1){
-            //frame is now available and the table page at the index i is also available (set respectively to 0 and -1)
+        //frame is now available and the table page at the index i is also available (set respectively to 0 and -1)
             mp->frame[mp->tablePage[i]/PAGE_TABLE]=0;
             mp->tablePage[i]=-1;
         }
     }
-    //if the last and first page are different and the last page is entirely free, we free the page table at the last index and we free the frame
+//if the last and first page are different and the last page is entirely free, we free the page table at the last index and we free the frame
     if(beg!=end && h1->sz%PAGE_TABLE==0){
         mp->frame[mp->tablePage[end]/PAGE_TABLE]=0;
         mp->tablePage[end]=-1;
     }
-    //if the first page is free : its first address is the first offset and the size is bigger than a page size we free the page table at this index
+//if the first page is free : its first address is the first offset and the size is bigger than a page size we free the page table at this index
     if(h1->adr%PAGE_TABLE==0 && sz>PAGE_TABLE-1){
         mp->frame[mp->tablePage[beg]/PAGE_TABLE]=0;
         mp->tablePage[beg]=-1;
@@ -172,7 +140,7 @@ void myFree(mem_t *mp, address_t p, int sz){
 }
 //creating the holes
 hole_t* myContFree(mem_t *mp, address_t p, int sz){
-    //initialize the hole h1 as the root (first hole of the VM)
+//initialize the hole h1 as the root (first hole of the VM)
     hole_t *h1 = mp->root;
     //allocate memory for the new hole if it is created
     hole_t *h2 = malloc(sizeof(*h2));
@@ -182,19 +150,19 @@ hole_t* myContFree(mem_t *mp, address_t p, int sz){
     h3 = NULL;//initialize at NULL
     //we go from one hole to another and we check if the address where we want to free the size is before the address of the current one
     while(h1 && condi==0){
-        //if the address of the element we want to free is in a hole, we return null
+    //if the address of the element we want to free is in a hole, we return null
         if(p>=h1->adr && p<((h1->adr)+(h1->sz))){
             h1=NULL;
             condi=1;//we get out of the loop
         }
         else{
-            //if we are at the good place -> the hole's address is after the address of the element to free, we get out of the loop
+        //if we are at the good place -> the hole's address is after the address of the element to free, we get out of the loop
             if(p<h1->adr)
             {
                 condi=1;
             }
             else h1 = h1->next;//else we go to the next hole
-        }    
+        }
     }
     //if h1 is not null - it means we found the place to free, we enter in the condition
     if(h1){
@@ -213,12 +181,12 @@ hole_t* myContFree(mem_t *mp, address_t p, int sz){
         //if my new hole joins the next hole the condition is verified
         if(h2->adr+h2->sz>=h1->adr)
         {
-            //we join the hole h1 and h2 so we redefine the size and the address of the new hole which is h1
+        //we join the hole h1 and h2 so we redefine the size and the address of the new hole which is h1
             h1->adr=h2->adr;
             h1->sz+=h2->sz;
             h1->prev = h2->prev;
             if(h2->prev!=NULL)
-                (h2->prev)->next=h1;
+            (h2->prev)->next=h1;
             //we free h2 because we don't need it anymore
             free(h2);
             //the hole return will be h1
@@ -226,15 +194,14 @@ hole_t* myContFree(mem_t *mp, address_t p, int sz){
             if(h1->prev != NULL){
                 //we check now if the new hole also joins the previous hole
                 if(h1->adr <= h1->prev->adr + h1->prev->sz){
-                    //if it is the case we redefine the configuration of the big hole
+                //if it is the case we redefine the configuration of the big hole
                     h1->adr = h1->prev->adr;
                     h1->sz += h1->prev->sz;
                     h3 = h1;//the hole returned is h1 (we don't need the prev and next attribute in the function myFree so we can give it this value)
-
                     h1 = h1->prev;
                     //we go on the previous hole and we check if it the root
                     if(h1 == mp->root){
-                        //if it is we redefine the root and we free h1 because we don't need it anymore
+                        //if it is we redefine the root and we free h1 because we dont need it anymore
                         h1->next->prev = h1->prev;
                         mp->root = h1->next;
                         free(h1);
@@ -248,9 +215,9 @@ hole_t* myContFree(mem_t *mp, address_t p, int sz){
             }
         }
         else if(h2->prev != NULL){
-            //we check if the new hole joins the previous hole, if it is the case we redefine the new hole
+        //we check if the new hole joins the previous hole, if it is the case we redefine the new hole
             if(h2->adr <= h2->prev->adr + h2->prev->sz){
-                //we define the new size and we don't need to define new address
+                //we define the new size and we dont need to define new address
                 h2->prev->sz += h2->sz;
                 h2->prev->next = h1;
                 h1->prev = h2->prev;
@@ -260,7 +227,7 @@ hole_t* myContFree(mem_t *mp, address_t p, int sz){
             }
         }
         else if(h1==mp->root)
-            mp->root = h2;//if h1 is the root, the new root is the previous hole : h2
+            mp->root = h2;//if h1 is the root, the new root is the previous hole: h2
         //h2 is inserted before h1 so if it is not free it is the new root
     }
     //return the hole inserted with join
@@ -268,7 +235,7 @@ hole_t* myContFree(mem_t *mp, address_t p, int sz){
 }
 //initialize memory
 mem_t *initMem(){
-    //allocate memory for the struct mem_t
+//allocate memory for the struct mem_t
     mem_t *mt = malloc(sizeof(*mt));
     //allocate memory to create the first hole
     hole_t *ht = malloc(sizeof(*ht));
@@ -290,7 +257,7 @@ mem_t *initMem(){
 }
 //allocation of memory in VM and association to the page table
 address_t myAlloc(mem_t *mp, int sz){
-    //we get the address of where the size has been allocated to in VM
+//we get the address of where the size has been allocated to in VM
     address_t addr = myAllocCont(mp, sz);
     //we define the first and last page index
     int beg = addr/PAGE_TABLE;
@@ -304,7 +271,7 @@ address_t myAlloc(mem_t *mp, int sz){
             int k;
             //loop to check where the frame is free thanks to the frame table (allow multiple processes to check it at same time)
             for(k=0;k<SIZE/PAGE_TABLE;k++){
-                //if the frame is empty
+            //if the frame is empty
                 if(mp->frame[k]==0){
                     //frame is now used
                     mp->frame[k]=-1;
@@ -317,8 +284,9 @@ address_t myAlloc(mem_t *mp, int sz){
         i++;//increment i to go to the next page
     }while(i<=end);//while we haven't looped through all the pages allocated in the VM (from the first page to the last page)
     //return the address where the size has been allocated
-    return addr;
+        return addr;
 }
+
 //allocate an element with a certain size to the virtual memory
 address_t myAllocCont(mem_t *mp, int sz){
     //nvx hole is the first hole (root)
@@ -330,18 +298,18 @@ address_t myAllocCont(mem_t *mp, int sz){
     }
     //if we found a place, nvx is not null and the condition is verified (it means we found a place to allocate the size)
     if(nvx){
-        //we define the address as the hole where size is big enough to be allocated
+    //we define the address as the hole where size is big enough to be allocated
         addr = nvx->adr;
         //if size is big enough and the hole is not empty
         if(nvx->sz > sz){
-            //we remove available size because we have allocated some so the hole is shorter
+        //we remove available size because we have allocated some so the hole is shorter
             nvx->sz -= sz;
             //the address where we can allocate the memory is now has a bigger value (e.g. the address was at 10 and we allocate 5 so now the address where the hole is available is at 15)
             nvx->adr +=sz;
         }
         else{
-            //if we filled the hole
-            //the previous hole has as next hole the next hole of the current hole
+        //if we filled the hole
+        //the previous hole has as next hole the next hole of the current hole
             if(nvx->prev!=NULL)
                 (nvx->prev)->next = nvx->next;
             //the next hole has as previous hole the previous hole of the current hole
@@ -355,5 +323,3 @@ address_t myAllocCont(mem_t *mp, int sz){
     else
         return -1;//else we return -1 to explain that we didn't find any place to allocate our element
 }
-```
-
